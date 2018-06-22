@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: matchmaker
+spec:
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        role: matchmaker-server
+    spec:
+      nodeSelector:
+        role: apps  ## role:apps Label Node에 생성
+      containers:
+      - name: matchmaker
+        image: registry.au-syd.bluemix.net/paddle-soccer/matchmaker  ## ICCP의 개인용 Repository내 있는 Image Pull 대상으로 변경
+        imagePullPolicy: Always
+        readinessProbe:
+            httpGet:
+                path: /readiness
+                port: 8080
+                scheme: HTTP
+            periodSeconds: 30
+            timeoutSeconds: 180
+        env:
+          - name: REDIS_SERVICE   ## Redis 연동
+            value: matchmaker-redis:6379
+          - name: SESSIONS_SERVICE  ## Server Manager(Session) 서버 연동
+            value: "http://sessions"
+        ports:
+        - containerPort: 8080
