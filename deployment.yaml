@@ -1,0 +1,35 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sessions
+spec:
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        role: sessions-server
+    spec:
+      nodeSelector:
+        role: apps   # role: apps Label을 가진 Node에 생성
+      containers:
+      - name: sessions
+        image: registry.au-syd.bluemix.net/paddle-soccer/sessions    # (6)에서 Push한 Session 서버 이미지 Pull 대상으로 변경
+        imagePullPolicy: Always
+        readinessProbe:
+            httpGet:
+                path: /readiness
+                port: 8080
+                scheme: HTTP
+            periodSeconds: 30
+            timeoutSeconds: 180
+        env:                        # Session이 생성될 때 Game 서버 생성 정보 명시
+          - name: REDIS_SERVICE
+            value: sessions-redis:6379
+          - name: GAME_SERVER_IMAGE
+            value: registry.au-syd.bluemix.net/paddle-soccer/game-server  # Client 프로그램 Build 후 Push한 Game 서버 이미지 Pull 대상으로 변경
+          - name: GAME_NODE_SELECTOR
+            value: "role:game-server"  # role: game-server Label을 가진 Node에 생성
+          - name: CPU_LIMIT
+            value: "0.1"
+        ports:
+        - containerPort: 8080
